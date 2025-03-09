@@ -7,7 +7,8 @@ import { ApiError } from "./helpers/server-functions";
 import cookieParser from "cookie-parser";
 import { appEnvConfigs } from "./configs";
 import userRouter from "./routes/user.routes";
-
+import { clerkMiddleware } from "@clerk/express";
+import accountRouter from "./routes/finance.routes";
 export const app = express();
 
 // MIDDLEWARES
@@ -18,7 +19,7 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan("common"));
-
+app.use(clerkMiddleware());
 // CORS CONFIGURATION
 
 app.use(
@@ -33,6 +34,7 @@ app.options("*", cors());
 
 // ROUTES
 app.use("/api/v1/user", userRouter);
+app.use("/api/v1/account", accountRouter);
 
 // GLOBAL ERROR HANDLER
 

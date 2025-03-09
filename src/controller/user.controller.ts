@@ -46,12 +46,7 @@ export class UserController {
         throw new ApiError(401, "INVALID SIGNATURE");
       }
 
-      // ✅ LOG WEBHOOK EVENT DATA
-      console.log(evt.data);
-
-      // ✅ EXTRACT USER DETAILS FROM WEBHOOK EVENT
-      const { id, email_addresses, first_name, last_name, image_url } =
-        evt.data;
+      const { id, first_name, last_name, image_url } = evt.data;
       const email = evt.data.email_addresses[0].email_address;
       const eventType = evt.type;
       console.log(
