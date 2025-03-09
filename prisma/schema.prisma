@@ -8,9 +8,95 @@ datasource db {
 }
 
 model User {
-  id        String  @id @default(cuid())
-  email     String  @unique
-  firstName String?
-  lastName  String?
-  imageUrl  String?
+  id          String        @id @default(uuid())
+  email       String        @unique
+  firstName   String?
+  lastName    String?
+  imageUrl    String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Accounts    Account[]
+  budget      Budget[]
+  Transaction Transaction[]
+
+  @@map("users")
+}
+
+
+// ===============  FINANCE DATABASE DESIGN =============================
+
+model Account {
+  id           String        @id @default(uuid())
+  userId       String        @unique
+  name         String
+  type         AccountsType  @default(CURRENT)
+  balance      Decimal       @default(0)
+  isDefault    Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([name, type, balance, isDefault])
+  @@map("accounts")
+}
+
+model Budget {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  amount        Decimal   @default(0)
+  lastAlertSent DateTime?
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([amount, lastAlertSent])
+  @@map("budgets")
+}
+
+model Transaction {
+  id                String             @id @default(uuid())
+  userId            String
+  accountId         String
+  type              TransactionType    @default(INCOME)
+  amount            Decimal            @default(0)
+  description       String?
+  date              DateTime
+  category          String
+  receiptUrl        String?
+  isRecurring       Boolean?           @default(false)
+  recurringInterval RecurringInterval?
+  nextRecurringDate DateTime?
+  lastProcessed     DateTime?
+  status            TransactionStatus  @default(COMPLETED)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account           Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, accountId])
+  @@map("transactions")
+}
+
+enum AccountsType {
+  CURRENT
+  SAVINGS
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum RecurringInterval {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  REJECTED
 }
