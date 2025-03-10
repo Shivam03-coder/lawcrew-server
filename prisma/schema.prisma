@@ -22,7 +22,6 @@ model User {
   @@map("users")
 }
 
-// ===============  FINANCE DATABASE DESIGN =============================
 
 model Account {
   id           String        @id @default(uuid())
