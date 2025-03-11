@@ -4,6 +4,8 @@ import { Router } from "express";
 
 const accountRouter = Router();
 
-accountRouter.route("/create").get(requireAuth(), FinanceController.Account);
+accountRouter
+  .route("/create")
+  .get(requireAuth(), FinanceController.CreateAccount);
 
 export default accountRouter;
