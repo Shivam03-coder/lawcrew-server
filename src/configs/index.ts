@@ -7,4 +7,5 @@ export const appEnvConfigs = {
   AUTH_PASS: process.env.AUTH_PASS,
   NEXT_APP_URI: process.env.NEXT_APP_URI,
   SIGNING_SECRET: process.env.SIGNING_SECRET,
+  ENCRYPTION_kEY: process.env.ENCRYPTION_kEY,
 };
