@@ -5,13 +5,16 @@ import {
   ApiResponse,
   AsyncHandler,
 } from "@src/helpers/server-functions";
+import { DecryptedRequest } from "@src/types/types";
 import { Request, Response } from "express";
 
 export class FinanceController {
   public static CreateAccount = AsyncHandler(
-    async (req: Request, res: Response): Promise<void> => {
+    async (req: DecryptedRequest, res: Response): Promise<void> => {
       const { userId } = getAuth(req);
-      const { balance, isDefault, name, type } = req.body;
+
+      const decryptedData = req.decryptedData;
+      const { balance, isDefault, name, type } = decryptedData;
 
       const user = await db.user.findUnique({
         where: { id: userId as string },

@@ -6,7 +6,7 @@ import { Router } from "express";
 const accountRouter = Router();
 
 accountRouter
-  .route("/create")
+  .route("/create-account")
   .get(requireAuth(), decryptPayload, FinanceController.CreateAccount);
 
 export default accountRouter;

@@ -1,3 +1,5 @@
+import { Request } from "express";
+
 namespace $Enums {
   export type Role = "user" | "admin" | "moderator";
 }
@@ -7,3 +9,8 @@ export type UserType = {
   email: string;
   password: string;
 };
+
+
+export interface DecryptedRequest extends Request {
+  decryptedData?: any;
+}

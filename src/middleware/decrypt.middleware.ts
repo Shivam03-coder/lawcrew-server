@@ -2,10 +2,7 @@ import { ApiError, ApiResponse } from "@src/helpers/server-functions";
 import { NextFunction, Request, Response } from "express";
 import CryptoJS from "crypto-js";
 import { appEnvConfigs } from "@src/configs";
-
-interface DecryptedRequest extends Request {
-  decryptedData?: any;
-}
+import { DecryptedRequest } from "@src/types/types";
 
 const decryptPayload = (
   req: DecryptedRequest,
