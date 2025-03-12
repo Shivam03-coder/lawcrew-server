@@ -8,7 +8,7 @@ import cookieParser from "cookie-parser";
 import { appEnvConfigs } from "./configs";
 import userRouter from "./routes/user.routes";
 import { clerkMiddleware } from "@clerk/express";
-import accountRouter from "./routes/finance.routes";
+import financeRouter from "./routes/finance.routes";
 export const app = express();
 
 // MIDDLEWARES
@@ -34,7 +34,7 @@ app.options("*", cors());
 
 // ROUTES
 app.use("/api/v1/user", userRouter);
-app.use("/api/v1/account", accountRouter);
+app.use("/api/v1/finance", financeRouter);
 
 // GLOBAL ERROR HANDLER
 
