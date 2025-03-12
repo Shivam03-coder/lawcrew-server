@@ -10,4 +10,8 @@ financeRouter
   .post(requireAuth(), decryptPayload, FinanceController.CreateAccount)
   .get(requireAuth(), FinanceController.GetAllAccounts);
 
+financeRouter
+  .route("/accounts/:accountId")
+  .patch(requireAuth(), FinanceController.UpdateDefaultAccount);
+
 export default financeRouter;

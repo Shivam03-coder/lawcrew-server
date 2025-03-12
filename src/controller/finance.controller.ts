@@ -93,4 +93,30 @@ export class FinanceController {
       res.json(new ApiResponse(200, "Accounts fetched successfully", accounts));
     }
   );
+
+  public static UpdateDefaultAccount = AsyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const user = await FinanceController.CheckUserId(req);
+      const { accountId } = req.params;
+      await db.account.updateMany({
+        where: { userId: user.id, isDefault: true },
+        data: {
+          isDefault: false,
+        },
+      });
+
+      const account = await db.account.update({
+        where: {
+          id: accountId,
+        },
+        data: {
+          isDefault: true,
+        },
+      });
+
+      res.json(
+        new ApiResponse(200, "Default account updated successfully", account)
+      );
+    }
+  );
 }

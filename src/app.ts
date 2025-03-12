@@ -47,7 +47,7 @@ class App {
       cors({
         origin: appEnvConfigs.NEXT_APP_URI || "*",
         credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
       })
     );
