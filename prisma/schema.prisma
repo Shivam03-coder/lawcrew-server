@@ -22,10 +22,9 @@ model User {
   @@map("users")
 }
 
-
 model Account {
   id           String        @id @default(uuid())
-  userId       String        @unique
+  userId       String
   name         String
   type         AccountsType  @default(CURRENT)
   balance      Decimal       @default(0)

@@ -64,19 +64,14 @@ class App {
   }
 
   private initializeErrorHandler(): void {
-    this.app.use((err: ApiError, req: any, res: any, _next: NextFunction) => {
+    this.app.use((err: ApiError, _req: any, res: any, _next: NextFunction) => {
       if (err instanceof ApiError) {
-        return res.status(err.code || 400).json({
+        return res.json({
           code: err.code,
           status: "failed",
           message: err.message,
         });
       }
-      return res.status(500).json({
-        code: 500,
-        status: "failed",
-        message: "Something went wrong!",
-      });
     });
   }
 

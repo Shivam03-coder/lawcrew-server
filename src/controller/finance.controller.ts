@@ -24,28 +24,39 @@ export class FinanceController {
       const decryptedData = FinanceController.getDecryptedData(
         req.decryptedData
       );
-      const { balance, isDefault, name, type } = decryptedData;
 
-      const balanceFloat = Number(balance);
+      const { balance, isDefault, name, type } = decryptedData;
+      console.log("🚀 ~ FinanceController ~ decryptedData:", decryptedData);
+
+      if (!name || !type) {
+        throw new ApiError(400, "Missing required fields: name or type");
+      }
+
+      const balanceFloat = parseFloat(balance);
       if (isNaN(balanceFloat)) {
         throw new ApiError(400, "Invalid balance");
       }
 
-      const user = await db.user.findUnique({ where: { id: userId } });
-      if (!user) {
-        throw new ApiError(404, "User not found");
-      }
+      const user = await db.user.findUnique({
+        where: { id: userId },
+      });
+      if (!user) throw new ApiError(404, "User not found");
 
       const userAccounts = await db.account.findMany({
         where: { userId: user.id },
       });
 
-      const shouldBeDefault = userAccounts.length === 0 || isDefault;
+      const shouldBeDefault = userAccounts.length === 0 || !!isDefault;
 
       if (shouldBeDefault) {
         await db.account.updateMany({
-          where: { userId: user.id, isDefault: true },
-          data: { isDefault: false },
+          where: {
+            userId: user.id,
+            isDefault: true,
+          },
+          data: {
+            isDefault: false,
+          },
         });
       }
 
@@ -59,7 +70,11 @@ export class FinanceController {
         },
       });
 
-      res.json(new ApiResponse(200, "Account created successfully", account));
+      res.json(
+        new ApiResponse(201, "Account created successfully", {
+          account,
+        })
+      );
     }
   );
 }
