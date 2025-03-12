@@ -6,7 +6,8 @@ import { Router } from "express";
 const financeRouter = Router();
 
 financeRouter
-  .route("/create-account")
-  .post(requireAuth(), decryptPayload, FinanceController.CreateAccount);
+  .route("/accounts")
+  .post(requireAuth(), decryptPayload, FinanceController.CreateAccount)
+  .get(requireAuth(), FinanceController.GetAllAccounts);
 
 export default financeRouter;

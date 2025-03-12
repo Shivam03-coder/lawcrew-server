@@ -6,7 +6,7 @@ import {
   AsyncHandler,
 } from "@src/helpers/server-functions";
 import { DecryptedRequest } from "@src/types/types";
-import { Response } from "express";
+import { Request, Response } from "express";
 
 export class FinanceController {
   private static getDecryptedData(decryptedData: any) {
@@ -16,10 +16,21 @@ export class FinanceController {
     return decryptedData;
   }
 
+  private static CheckUserId = async (req: Request) => {
+    const { userId } = getAuth(req);
+    if (!userId) throw new ApiError(401, "Unauthorized");
+    const user = await db.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+    return user;
+  };
+
   public static CreateAccount = AsyncHandler(
     async (req: DecryptedRequest, res: Response): Promise<void> => {
-      const { userId } = getAuth(req);
-      if (!userId) throw new ApiError(401, "Unauthorized");
+      const user = await FinanceController.CheckUserId(req);
 
       const decryptedData = FinanceController.getDecryptedData(
         req.decryptedData
@@ -35,11 +46,6 @@ export class FinanceController {
       if (isNaN(balanceFloat)) {
         throw new ApiError(400, "Invalid balance");
       }
-
-      const user = await db.user.findUnique({
-        where: { id: userId },
-      });
-      if (!user) throw new ApiError(404, "User not found");
 
       const userAccounts = await db.account.findMany({
         where: { userId: user.id },
@@ -70,6 +76,21 @@ export class FinanceController {
       });
 
       res.json(new ApiResponse(201, "Account created successfully"));
+    }
+  );
+
+  public static GetAllAccounts = AsyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const user = await FinanceController.CheckUserId(req);
+
+      const accounts = await db.account.findMany({
+        where: { userId: user.id },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      res.json(new ApiResponse(200, "Accounts fetched successfully", accounts));
     }
   );
 }
