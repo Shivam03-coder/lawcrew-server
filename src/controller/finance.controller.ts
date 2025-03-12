@@ -26,7 +26,6 @@ export class FinanceController {
       );
 
       const { balance, isDefault, name, type } = decryptedData;
-      console.log("🚀 ~ FinanceController ~ decryptedData:", decryptedData);
 
       if (!name || !type) {
         throw new ApiError(400, "Missing required fields: name or type");
@@ -70,11 +69,7 @@ export class FinanceController {
         },
       });
 
-      res.json(
-        new ApiResponse(201, "Account created successfully", {
-          account,
-        })
-      );
+      res.json(new ApiResponse(201, "Account created successfully"));
     }
   );
 }
