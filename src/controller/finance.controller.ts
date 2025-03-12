@@ -21,7 +21,9 @@ export class FinanceController {
       const { userId } = getAuth(req);
       if (!userId) throw new ApiError(401, "Unauthorized");
 
-      const decryptedData = FinanceController.getDecryptedData(req.decryptedData);
+      const decryptedData = FinanceController.getDecryptedData(
+        req.decryptedData
+      );
       const { balance, isDefault, name, type } = decryptedData;
 
       const balanceFloat = Number(balance);
