@@ -6,33 +6,41 @@ import {
   AsyncHandler,
 } from "@src/helpers/server-functions";
 import { DecryptedRequest } from "@src/types/types";
-import { Request, Response } from "express";
+import { Response } from "express";
 
 export class FinanceController {
+  private static getDecryptedData(decryptedData: any) {
+    if (!decryptedData) {
+      throw new ApiError(400, "No decrypted data found");
+    }
+    return decryptedData;
+  }
+
   public static CreateAccount = AsyncHandler(
     async (req: DecryptedRequest, res: Response): Promise<void> => {
       const { userId } = getAuth(req);
+      if (!userId) throw new ApiError(401, "Unauthorized");
 
-      const decryptedData = req.decryptedData;
+      const decryptedData = FinanceController.getDecryptedData(req.decryptedData);
       const { balance, isDefault, name, type } = decryptedData;
 
-      const user = await db.user.findUnique({
-        where: { id: userId as string },
-      });
+      const balanceFloat = Number(balance);
+      if (isNaN(balanceFloat)) {
+        throw new ApiError(400, "Invalid balance");
+      }
 
-      if (!user) throw new ApiError(404, "User not found");
+      const user = await db.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new ApiError(404, "User not found");
+      }
 
-      const balanceFloat = parseFloat(balance);
-
-      if (isNaN(balanceFloat)) throw new ApiError(404, "Balance Inavlid");
-
-      const userAccount = await db.account.findMany({
+      const userAccounts = await db.account.findMany({
         where: { userId: user.id },
       });
 
-      const shouldbeDefault = userAccount.length === 0 ? true : isDefault;
+      const shouldBeDefault = userAccounts.length === 0 || isDefault;
 
-      if (shouldbeDefault) {
+      if (shouldBeDefault) {
         await db.account.updateMany({
           where: { userId: user.id, isDefault: true },
           data: { isDefault: false },
@@ -41,15 +49,15 @@ export class FinanceController {
 
       const account = await db.account.create({
         data: {
+          userId: user.id,
           name,
           type,
-          userId: user.id,
           balance: balanceFloat,
-          isDefault: shouldbeDefault,
+          isDefault: shouldBeDefault,
         },
       });
 
-      res.json(new ApiResponse(200, "Account Created Successfully", account));
+      res.json(new ApiResponse(200, "Account created successfully", account));
     }
   );
 }
