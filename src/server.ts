@@ -1,26 +1,33 @@
 import { Response } from "express";
-import { app } from "./app";
 import { appEnvConfigs } from "./configs";
 import { ApiResponse } from "./helpers/server-functions";
+import App from "./app";
 
+const appInstance = new App();
+const expressApp = appInstance.getAppInstance();
 (() => {
   try {
-    app.get("/", async (_, res: Response) => {
+    expressApp.get("/", (_req, res: Response) => {
       res.json(
-        new ApiResponse(200, "welcome to server dveloped by shivam anand")
+        new ApiResponse(
+          200,
+          "Welcome to the server developed by Shivam Anand 🚀"
+        )
       );
     });
-    const server = app.listen(appEnvConfigs.PORT, () => {
-      console.log(`Server started at http://localhost:${appEnvConfigs.PORT}`);
+    const port = appEnvConfigs.PORT || 3000;
+    const server = expressApp.listen(port, () => {
+      console.log(`✅ Server started at http://localhost:${port}`);
     });
 
     const gracefulShutdown = async (signal: string) => {
-      console.log(`Received ${signal}. Shutting down gracefully...`);
+      console.log(`⚠️  Received ${signal}. Shutting down gracefully...`);
       server.close(() => {
         console.log("🛑 Server closed");
         process.exit(0);
       });
     };
+
     process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
     process.on("SIGINT", () => gracefulShutdown("SIGINT"));
   } catch (error) {

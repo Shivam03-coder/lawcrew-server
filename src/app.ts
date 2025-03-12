@@ -1,49 +1,98 @@
 import cors from "cors";
-import express, { NextFunction, Request, Response } from "express";
+import express, { Application, NextFunction, Request, Response } from "express";
 import morgan from "morgan";
 import helmet from "helmet";
 import bodyParser from "body-parser";
-import { ApiError } from "./helpers/server-functions";
 import cookieParser from "cookie-parser";
-import { appEnvConfigs } from "./configs";
-import userRouter from "./routes/user.routes";
+import { Server } from "http";
 import { clerkMiddleware } from "@clerk/express";
-import financeRouter from "./routes/finance.routes";
-export const app = express();
+import { appEnvConfigs } from "./configs";
+import { ApiError } from "./helpers/server-functions";
+import routes from "./routes/index.routes";
 
-// MIDDLEWARES
+interface AppOptions {
+  port?: number;
+}
 
-app.use(helmet());
-app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use(morgan("common"));
-app.use(clerkMiddleware());
-// CORS CONFIGURATION
+class App {
+  private readonly app: Application;
+  private server?: Server;
+  private readonly port: number;
 
-app.use(
-  cors({
-    origin: appEnvConfigs.NEXT_APP_URI || "*",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-app.options("*", cors());
+  constructor(options?: AppOptions) {
+    this.app = express();
+    this.port = options?.port || Number(appEnvConfigs.PORT) || 3000;
+    this.initializeMiddlewares();
+    this.initializeRoutes();
+    this.initializeErrorHandler();
+  }
 
-// ROUTES
-app.use("/api/v1/user", userRouter);
-app.use("/api/v1/finance", financeRouter);
+  private initializeMiddlewares(): void {
+    // Basic security and logging middlewares
+    this.app.use(helmet());
+    this.app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
+    this.app.use(morgan("common"));
+    this.app.enable("trust proxy");
 
-// GLOBAL ERROR HANDLER
+    // Body parsing and cookie handling
+    this.app.use(express.json());
+    this.app.use(bodyParser.urlencoded({ extended: true }));
+    this.app.use(cookieParser());
 
-app.use((err: ApiError, _req: any, res: any, _next: NextFunction) => {
-  if (err instanceof ApiError) {
-    return res.json({
-      code: err.code,
-      status: "failed",
-      message: err.message,
+    // Clerk auth middleware
+    this.app.use(clerkMiddleware());
+
+    // CORS
+    this.app.use(
+      cors({
+        origin: appEnvConfigs.NEXT_APP_URI || "*",
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+      })
+    );
+
+    this.app.options("*", cors());
+  }
+
+  private initializeRoutes(): void {
+    routes.forEach((route) => {
+      const fullPath = `/api/v1/${route.path}`;
+      this.app.use(fullPath, route.router);
+      console.log(`✅ Route registered: ${fullPath}`);
     });
   }
-});
+
+  private initializeErrorHandler(): void {
+    this.app.use((err: ApiError, req: any, res: any, _next: NextFunction) => {
+      if (err instanceof ApiError) {
+        return res.status(err.code || 400).json({
+          code: err.code,
+          status: "failed",
+          message: err.message,
+        });
+      }
+      return res.status(500).json({
+        code: 500,
+        status: "failed",
+        message: "Something went wrong!",
+      });
+    });
+  }
+
+  public listen(): void {
+    this.server = this.app.listen(this.port, () => {
+      console.log(`🚀 Server running on http://localhost:${this.port}`);
+    });
+  }
+
+  public getAppInstance(): Application {
+    return this.app;
+  }
+
+  public getServerInstance(): Server | undefined {
+    return this.server;
+  }
+}
+
+export default App;
