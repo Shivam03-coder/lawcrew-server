@@ -1,5 +1,6 @@
 import { getAuth } from "@clerk/express";
 import { db } from "@src/db";
+import { monthNames } from "@src/helpers/const";
 import {
   ApiError,
   ApiResponse,
@@ -151,7 +152,6 @@ export class FinanceController {
         );
       }
 
-
       res.json(
         new ApiResponse(200, "Transactions fetched successfully", account)
       );
@@ -162,7 +162,10 @@ export class FinanceController {
     async (req: Request, res: Response): Promise<void> => {
       const user = await FinanceController.CheckUserId(req);
       const transactionidsParam = req.body.transactionIds;
-      console.log("🚀 ~ FinanceController ~ transactionidsParam:", transactionidsParam)
+      console.log(
+        "🚀 ~ FinanceController ~ transactionidsParam:",
+        transactionidsParam
+      );
 
       if (!transactionidsParam) {
         res
