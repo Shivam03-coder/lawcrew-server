@@ -53,8 +53,8 @@ model Budget {
 
 model Transaction {
   id                String             @id @default(uuid())
-  userId            String             @unique
-  accountId         String             @unique
+  userId            String
+  accountId         String
   type              TransactionType    @default(INCOME)
   amount            Decimal            @default(0)
   description       String?
@@ -82,6 +82,7 @@ enum AccountsType {
 enum TransactionType {
   INCOME
   EXPENSE
+  TRANSFER
 }
 
 enum RecurringInterval {

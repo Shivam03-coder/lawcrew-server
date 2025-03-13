@@ -119,4 +119,108 @@ export class FinanceController {
       );
     }
   );
+
+  public static GetAccountTransactions = AsyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const user = await FinanceController.CheckUserId(req);
+      const { accountId } = req.params;
+
+      const account = await db.account.findUnique({
+        where: {
+          id: accountId,
+          userId: user.id,
+        },
+        include: {
+          transactions: {
+            orderBy: {
+              date: "desc",
+            },
+          },
+          _count: {
+            select: {
+              transactions: true,
+            },
+          },
+        },
+      });
+
+      if (!account) {
+        throw new ApiError(
+          404,
+          "Account not found or does not belong to the user"
+        );
+      }
+
+      console.log(account);
+
+      res.json(
+        new ApiResponse(200, "Transactions fetched successfully", account)
+      );
+    }
+  );
+
+  public static DeleteAccountTransactions = AsyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const user = await FinanceController.CheckUserId(req);
+      const transactionidsParam = req.query.transactionids;
+
+      if (!transactionidsParam) {
+        res
+          .status(400)
+          .json(new ApiResponse(400, "No transaction IDs provided in query"));
+        return;
+      }
+
+      let transactionids: string[] = [];
+
+      if (typeof transactionidsParam === "string") {
+        transactionids = transactionidsParam.split(",").map((id) => id.trim());
+      } else if (Array.isArray(transactionidsParam)) {
+        transactionids = transactionidsParam
+          .map((id) => (typeof id === "string" ? id.trim() : ""))
+          .filter(Boolean);
+      }
+
+      const transaction = await db.transaction.findMany({
+        where: {
+          id: {
+            in: transactionids,
+          },
+          userId: user.id,
+        },
+      });
+
+      const accountbalanceChanges = transaction.reduce((acc, cur) => {
+        const amount = cur.amount;
+        const change = cur.type === "EXPENSE" ? -amount : amount;
+        acc[cur.accountId] = (acc[cur.accountId] || 0) + Number(change);
+
+        return acc;
+      }, {} as Record<string, number>);
+
+      await db.$transaction(async (tx) => {
+        await tx.transaction.deleteMany({
+          where: {
+            id: {
+              in: transactionids,
+            },
+            userId: user.id,
+          },
+        });
+
+        for (const accountId in accountbalanceChanges) {
+          await tx.account.update({
+            where: {
+              id: accountId,
+            },
+            data: {
+              balance: accountbalanceChanges[accountId],
+            },
+          });
+        }
+      });
+
+      res.json(new ApiResponse(200, "Transactions deleted successfully"));
+    }
+  );
 }
