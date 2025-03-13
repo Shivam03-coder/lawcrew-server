@@ -151,7 +151,6 @@ export class FinanceController {
         );
       }
 
-      console.log(account);
 
       res.json(
         new ApiResponse(200, "Transactions fetched successfully", account)
@@ -162,7 +161,8 @@ export class FinanceController {
   public static DeleteAccountTransactions = AsyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = await FinanceController.CheckUserId(req);
-      const transactionidsParam = req.query.transactionids;
+      const transactionidsParam = req.body.transactionIds;
+      console.log("🚀 ~ FinanceController ~ transactionidsParam:", transactionidsParam)
 
       if (!transactionidsParam) {
         res
