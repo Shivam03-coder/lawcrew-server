@@ -162,10 +162,6 @@ export class FinanceController {
     async (req: Request, res: Response): Promise<void> => {
       const user = await FinanceController.CheckUserId(req);
       const transactionidsParam = req.body.transactionIds;
-      console.log(
-        "🚀 ~ FinanceController ~ transactionidsParam:",
-        transactionidsParam
-      );
 
       if (!transactionidsParam) {
         res
@@ -224,6 +220,96 @@ export class FinanceController {
       });
 
       res.json(new ApiResponse(200, "Transactions deleted successfully"));
+    }
+  );
+
+  // public static GetCurrentAccountBudget = AsyncHandler(
+  //   async (req: Request, res: Response): Promise<void> => {}
+  // );
+
+  public static GetCurrentAccountBudget = AsyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const user = await FinanceController.CheckUserId(req);
+      const { accountId } = req.body;
+      const budget = await db.budget.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
+
+      const currentDate = new Date();
+
+      const startOfMonth = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        1
+      );
+      const endOfMonth = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
+        0
+      );
+
+      const expenses = await db.transaction.aggregate({
+        where: {
+          userId: user.id,
+          accountId,
+          type: "EXPENSE",
+          date: {
+            gte: startOfMonth,
+
+            lt: endOfMonth,
+          },
+        },
+        _sum: {
+          amount: true,
+        },
+      });
+
+      const totalBudget = {
+        budget: budget ? { ...budget, amount: budget.amount.toNumber() } : null,
+
+        currentExpenses: expenses._sum.amount
+          ? expenses._sum.amount.toNumber()
+          : 0,
+      };
+      res.json(
+        new ApiResponse(
+          200,
+          "Current account budget fetched successfully",
+          totalBudget
+        )
+      );
+    }
+  );
+
+  public static UpdateAccountBudget = AsyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const user = await FinanceController.CheckUserId(req);
+      const { newBudget } = req.body;
+      if (!newBudget) {
+        throw new ApiError(400, "No new budget provided in request body");
+      }
+
+      const budget = await db.budget.upsert({
+        where: {
+          userId: user.id,
+        },
+        create: {
+          userId: user.id,
+          amount: newBudget,
+        },
+        update: {
+          amount: newBudget,
+        },
+      });
+      res.json(
+        new ApiResponse(
+          200,
+          "Current account budget updated successfully",
+          budget
+        )
+      );
     }
   );
 }

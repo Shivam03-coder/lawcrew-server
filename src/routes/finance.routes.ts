@@ -18,4 +18,12 @@ financeRouter
   .route("/accounts/:accountId/transactions")
   .get(requireAuth(), FinanceController.GetAccountTransactions)
   .delete(requireAuth(), FinanceController.DeleteAccountTransactions);
+
+financeRouter
+  .route("/accounts/budget")
+  .get(requireAuth(), FinanceController.GetCurrentAccountBudget)
+  .post(requireAuth(), FinanceController.UpdateAccountBudget);
+
+// UpdateAccountBudget
+
 export default financeRouter;
