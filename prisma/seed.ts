@@ -5,9 +5,9 @@ const db = new PrismaClient();
 
 async function main() {
   const userId = "user_2u4Yn2zzFio5OnX0lv3Gn4mLK2W";
-  const accountId = "2b452b15-6f26-4ddc-98b7-0f7014f223b5";
+  const accountId = "08c4a129-3bfe-4715-b9e8-0a6435043aa6";
 
-  const transactions = Array.from({ length: 20 }).map(() => ({
+  const transactions = Array.from({ length: 5 }).map(() => ({
     userId,
     accountId,
     type: faker.helpers.arrayElement(["INCOME", "EXPENSE", "TRANSFER"]),

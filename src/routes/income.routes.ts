@@ -22,7 +22,7 @@ financeRouter
 financeRouter
   .route("/accounts/budget")
   .get(requireAuth(), FinanceController.GetCurrentAccountBudget)
-  .post(requireAuth(), FinanceController.UpdateAccountBudget);
+  .post(requireAuth(),decryptPayload, FinanceController.UpdateAccountBudget);
 
 // UpdateAccountBudget
 

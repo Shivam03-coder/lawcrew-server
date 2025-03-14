@@ -161,38 +161,59 @@ export class FinanceController {
   public static DeleteAccountTransactions = AsyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = await FinanceController.CheckUserId(req);
-      const transactionidsParam = req.body.transactionIds;
+      const transactionIdsParam = req.body.transactionIds;
 
-      if (!transactionidsParam) {
+      if (
+        !transactionIdsParam ||
+        (Array.isArray(transactionIdsParam) && transactionIdsParam.length === 0)
+      ) {
         res
           .status(400)
-          .json(new ApiResponse(400, "No transaction IDs provided in query"));
+          .json(new ApiResponse(400, "No transaction IDs provided"));
         return;
       }
 
-      let transactionids: string[] = [];
+      let transactionIds: string[] = [];
 
-      if (typeof transactionidsParam === "string") {
-        transactionids = transactionidsParam.split(",").map((id) => id.trim());
-      } else if (Array.isArray(transactionidsParam)) {
-        transactionids = transactionidsParam
+      if (typeof transactionIdsParam === "string") {
+        transactionIds = transactionIdsParam.split(",").map((id) => id.trim());
+      } else if (Array.isArray(transactionIdsParam)) {
+        transactionIds = transactionIdsParam
           .map((id) => (typeof id === "string" ? id.trim() : ""))
           .filter(Boolean);
       }
 
-      const transaction = await db.transaction.findMany({
+      if (transactionIds.length === 0) {
+        res.status(400).json(new ApiResponse(400, "Invalid transaction IDs"));
+        return;
+      }
+
+      const transactions = await db.transaction.findMany({
         where: {
           id: {
-            in: transactionids,
+            in: transactionIds,
           },
           userId: user.id,
         },
       });
 
-      const accountbalanceChanges = transaction.reduce((acc, cur) => {
-        const amount = cur.amount;
-        const change = cur.type === "EXPENSE" ? -amount : amount;
-        acc[cur.accountId] = (acc[cur.accountId] || 0) + Number(change);
+      if (transactions.length === 0) {
+        res
+          .status(404)
+          .json(new ApiResponse(404, "No transactions found for deletion"));
+        return;
+      }
+
+      const accountBalanceChanges = transactions.reduce((acc, transaction) => {
+        const amount = Number(transaction.amount);
+        const accountId = transaction.accountId;
+
+        const balanceChange =
+          transaction.type === "EXPENSE" || transaction.type === "TRANSFER"
+            ? amount
+            : -amount;
+
+        acc[accountId] = (acc[accountId] || 0) + balanceChange;
 
         return acc;
       }, {} as Record<string, number>);
@@ -201,19 +222,21 @@ export class FinanceController {
         await tx.transaction.deleteMany({
           where: {
             id: {
-              in: transactionids,
+              in: transactionIds,
             },
             userId: user.id,
           },
         });
 
-        for (const accountId in accountbalanceChanges) {
+        for (const [accountId, balanceChange] of Object.entries(
+          accountBalanceChanges
+        )) {
           await tx.account.update({
-            where: {
-              id: accountId,
-            },
+            where: { id: accountId },
             data: {
-              balance: accountbalanceChanges[accountId],
+              balance: {
+                increment: balanceChange,
+              },
             },
           });
         }
@@ -223,14 +246,11 @@ export class FinanceController {
     }
   );
 
-  // public static GetCurrentAccountBudget = AsyncHandler(
-  //   async (req: Request, res: Response): Promise<void> => {}
-  // );
-
   public static GetCurrentAccountBudget = AsyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = await FinanceController.CheckUserId(req);
       const { accountId } = req.body;
+
       const budget = await db.budget.findFirst({
         where: {
           userId: user.id,
@@ -238,7 +258,6 @@ export class FinanceController {
       });
 
       const currentDate = new Date();
-
       const startOfMonth = new Date(
         currentDate.getFullYear(),
         currentDate.getMonth(),
@@ -254,10 +273,11 @@ export class FinanceController {
         where: {
           userId: user.id,
           accountId,
-          type: "EXPENSE",
+          type: {
+            in: ["EXPENSE", "TRANSFER"],
+          },
           date: {
             gte: startOfMonth,
-
             lt: endOfMonth,
           },
         },
@@ -266,13 +286,15 @@ export class FinanceController {
         },
       });
 
+      const totalExpenses = expenses._sum.amount
+        ? expenses._sum.amount.toNumber()
+        : 0;
+
       const totalBudget = {
         budget: budget ? { ...budget, amount: budget.amount.toNumber() } : null,
-
-        currentExpenses: expenses._sum.amount
-          ? expenses._sum.amount.toNumber()
-          : 0,
+        currentExpenses: totalExpenses,
       };
+
       res.json(
         new ApiResponse(
           200,
@@ -284,14 +306,14 @@ export class FinanceController {
   );
 
   public static UpdateAccountBudget = AsyncHandler(
-    async (req: Request, res: Response): Promise<void> => {
+    async (req: DecryptedRequest, res: Response): Promise<void> => {
       const user = await FinanceController.CheckUserId(req);
-      const { amount } = req.body;
+      const { amount } = FinanceController.getDecryptedData(req.decryptedData);
       if (!amount) {
         throw new ApiError(400, "No new budget provided in request body");
       }
 
-      const budget = await db.budget.upsert({
+      await db.budget.upsert({
         where: {
           userId: user.id,
         },
@@ -303,13 +325,7 @@ export class FinanceController {
           amount,
         },
       });
-      res.json(
-        new ApiResponse(
-          200,
-          "Current account budget updated successfully",
-          budget
-        )
-      );
+      res.json(new ApiResponse(200, "Budget updated successfully"));
     }
   );
 }
