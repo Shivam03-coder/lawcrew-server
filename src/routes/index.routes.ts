@@ -1,4 +1,4 @@
-import financeRouter from "./finance.routes";
+import financeRouter from "./income.routes";
 import userRouter from "./user.routes";
 
 export default [

@@ -286,8 +286,8 @@ export class FinanceController {
   public static UpdateAccountBudget = AsyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = await FinanceController.CheckUserId(req);
-      const { newBudget } = req.body;
-      if (!newBudget) {
+      const { amount } = req.body;
+      if (!amount) {
         throw new ApiError(400, "No new budget provided in request body");
       }
 
@@ -297,10 +297,10 @@ export class FinanceController {
         },
         create: {
           userId: user.id,
-          amount: newBudget,
+          amount,
         },
         update: {
-          amount: newBudget,
+          amount,
         },
       });
       res.json(

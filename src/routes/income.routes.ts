@@ -1,5 +1,5 @@
 import { requireAuth } from "@clerk/express";
-import { FinanceController } from "@src/controller/finance.controller";
+import { FinanceController } from "@src/controller/income.controller";
 import decryptPayload from "@src/middleware/decrypt.middleware";
 import { Router } from "express";
 
