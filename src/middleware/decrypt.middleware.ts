@@ -10,6 +10,7 @@ const decryptPayload = (
   next: NextFunction
 ) => {
   const { payload } = req.body;
+  console.log("🚀 ~ payload:", payload)
   if (!payload) throw new ApiError(400, `Missing encrypted payload`);
   try {
     const bytes = CryptoJS.AES.decrypt(

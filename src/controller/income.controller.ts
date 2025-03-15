@@ -273,9 +273,7 @@ export class FinanceController {
         where: {
           userId: user.id,
           accountId,
-          type: {
-            in: ["EXPENSE", "TRANSFER"],
-          },
+          type: "EXPENSE",
           date: {
             gte: startOfMonth,
             lt: endOfMonth,
@@ -332,95 +330,67 @@ export class FinanceController {
   public static CreateTransaction = AsyncHandler(
     async (req: DecryptedRequest, res: Response): Promise<void> => {
       const user = await FinanceController.CheckUserId(req);
+      const data = FinanceController.getDecryptedData(req.decryptedData);
 
-      // ARC JET FOR RATE LIMITTING
-      const {
-        type,
-        amount,
-        description,
-        date,
-        accountId,
-        category,
-        isRecurring,
-        recurringInterval,
-      } = FinanceController.getDecryptedData(req.decryptedData);
+      const requiredFields = [
+        "accountId",
+        "type",
+        "amount",
+        "description",
+        "date",
+        "category",
+        "isRecurring",
+        "recurringInterval",
+      ];
 
-      if (
-        !accountId ||
-        !type ||
-        !amount ||
-        !description ||
-        !date ||
-        !category ||
-        !isRecurring ||
-        !recurringInterval
-      ) {
-        throw new ApiError(
-          400,
-          "Missing required fields in request body (accountId, type, amount, description, date)"
-        );
+      if (requiredFields.some((field) => data[field] === undefined)) {
+        throw new ApiError(400, "Missing required fields in request body.");
       }
 
       const account = await db.account.findUnique({
-        where: {
-          id: accountId,
-          userId: user.id,
-        },
+        where: { id: data.accountId, userId: user.id },
       });
 
       if (!account) {
-        throw new ApiError(
-          404,
-          "Account not found or does not belong to the user"
-        );
+        throw new ApiError(404, "Account not found or unauthorized.");
       }
 
-      const amountFloat = parseFloat(amount);
+      const amountFloat = parseFloat(data.amount);
       if (isNaN(amountFloat)) {
-        throw new ApiError(400, "Invalid amount provided in request body");
+        throw new ApiError(400, "Invalid amount.");
       }
 
-      const balanceChange =
-        type === "EXPENSE" || type === "TRANSFER" ? -amount : amount;
-
+      const balanceChange = ["EXPENSE"].includes(data.type)
+        ? -amountFloat
+        : amountFloat;
       const newBalance = account.balance.toNumber() + balanceChange;
 
-      const transaction = await db.$transaction(async (tx) => {
-        const newTransaction = await tx.transaction.create({
-          data: {
-            userId: user.id,
-            accountId,
-            type,
-            amount: amountFloat,
-            description,
-            date,
-            category,
-            isRecurring,
-            recurringInterval,
-            nextRecurringDate:
-              isRecurring && recurringInterval
-                ? calculateNextRecurringDate(date, recurringInterval)
-                : null,
-          },
-        });
+      await db.$transaction(async (tx) => {
+        await Promise.all([
+          tx.transaction.create({
+            data: {
+              userId: user.id,
+              accountId: data.accountId,
+              ...data,
+              amount: amountFloat,
+              nextRecurringDate:
+                data.isRecurring && data.recurringInterval
+                  ? calculateNextRecurringDate(
+                      data.date,
+                      data.recurringInterval
+                    )
+                  : null,
+            },
+          }),
 
-        await tx.account.update({
-          where: {
-            id: accountId,
-          },
-          data: {
-            balance: newBalance,
-          },
-        });
-        return newTransaction;
+          tx.account.update({
+            where: { id: data.accountId },
+            data: { balance: newBalance },
+          }),
+        ]);
       });
 
-      res.json(
-        new ApiResponse(
-          201,
-          `Transaction of ${transaction.amount} created successfully`
-        )
-      );
+      res.json(new ApiResponse(201, `Transaction  created successfully`));
     }
   );
 }

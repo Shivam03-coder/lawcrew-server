@@ -1,33 +1,49 @@
-import { requireAuth } from "@clerk/express";
-import { FinanceController } from "@src/controller/income.controller";
-import decryptPayload from "@src/middleware/decrypt.middleware";
 import { Router } from "express";
+import { requireAuth } from "@clerk/express";
+import decryptPayload from "@src/middleware/decrypt.middleware";
+import { FinanceController } from "@src/controller/income.controller";
 
 const financeRouter = Router();
 
-financeRouter
-  .route("/accounts")
+/**
+ * ==========================
+ *        ACCOUNTS
+ * ==========================
+ */
+
+// Create an account / Get all accounts
+financeRouter.route("/accounts")
   .post(requireAuth(), decryptPayload, FinanceController.CreateAccount)
   .get(requireAuth(), FinanceController.GetAllAccounts);
 
-financeRouter
-  .route("/accounts/:accountId")
+// Update a specific account (e.g., set default account)
+financeRouter.route("/accounts/:accountId")
   .patch(requireAuth(), FinanceController.UpdateDefaultAccount);
 
-financeRouter
-  .route("/accounts/:accountId/transactions")
+/**
+ * ==========================
+ *     ACCOUNT TRANSACTIONS
+ * ==========================
+ */
+
+// Get/Delete transactions for a specific account
+financeRouter.route("/accounts/:accountId/transactions")
   .get(requireAuth(), FinanceController.GetAccountTransactions)
   .delete(requireAuth(), FinanceController.DeleteAccountTransactions);
 
-financeRouter
-  .route("/accounts/transactions")
+// Create a transaction (linked to any account)
+financeRouter.route("/accounts/transactions")
   .post(requireAuth(), decryptPayload, FinanceController.CreateTransaction);
 
-financeRouter
-  .route("/accounts/budget")
+/**
+ * ==========================
+ *        BUDGETS
+ * ==========================
+ */
+
+// Get/Update budget for the current account
+financeRouter.route("/accounts/budget")
   .get(requireAuth(), FinanceController.GetCurrentAccountBudget)
   .post(requireAuth(), decryptPayload, FinanceController.UpdateAccountBudget);
-
-// UpdateAccountBudget
 
 export default financeRouter;

@@ -34,7 +34,7 @@ class App {
     this.app.use(morgan("common"));
     this.app.enable("trust proxy");
 
-    // Body parsing and cookie handling
+    // Body parsing and cookie handling~
     this.app.use(express.json());
     this.app.use(bodyParser.urlencoded({ extended: true }));
     this.app.use(cookieParser());
@@ -45,7 +45,7 @@ class App {
     // CORS
     this.app.use(
       cors({
-        origin: appEnvConfigs.NEXT_APP_URI || "*",
+        origin: appEnvConfigs.NEXT_APP_URI || "http://localhost:3000",
         credentials: true,
         methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
