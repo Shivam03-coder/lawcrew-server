@@ -5,6 +5,7 @@ import { FinanceController } from "@src/controller/income.controller";
 import { shield } from "@arcjet/node";
 import Aj from "@src/middleware/security.middleware";
 import Security from "@src/middleware/security.middleware";
+import { upload } from "@src/middleware/multer.middleware";
 
 const financeRouter = Router();
 
@@ -47,6 +48,16 @@ financeRouter
     FinanceController.CreateTransaction
   );
 
+// ScanReciept
+financeRouter.post(
+  "/accounts/transactions/scan-reciept",
+  requireAuth(),
+  Security,
+  upload.single("receipt"),
+  FinanceController.ScanReciept
+);
+
+// TODO: Implement budget tracking and budget alerts
 /**
  * ==========================
  *        BUDGETS

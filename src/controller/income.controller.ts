@@ -6,6 +6,7 @@ import {
   ApiResponse,
   AsyncHandler,
 } from "@src/helpers/server-functions";
+import { scanReceipt } from "@src/libs/ai";
 import { DecryptedRequest } from "@src/types/types";
 import { Request, Response } from "express";
 
@@ -391,6 +392,17 @@ export class FinanceController {
       });
 
       res.json(new ApiResponse(201, `Transaction  created successfully`));
+    }
+  );
+
+  public static ScanReciept = AsyncHandler(
+    async (req: DecryptedRequest, res: Response): Promise<void> => {
+      // const user = await FinanceController.CheckUserId(req);
+      const file = req.file;
+      if (!file) throw new ApiError(400, "No file uploaded.");
+      const recieptData = await scanReceipt(file);
+      if (!recieptData) throw new ApiError(400, "Failed to scan receipt.");
+      console.log(recieptData);
     }
   );
 }

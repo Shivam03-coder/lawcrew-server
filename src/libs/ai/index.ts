@@ -3,7 +3,9 @@ import { appEnvConfigs } from "@src/configs";
 
 const Ai = new GoogleGenerativeAI(appEnvConfigs.AI_PUBLISHABLE_KEY as string);
 
-export const scanReceipt = async (file: File): Promise<{
+export const scanReceipt = async (
+  file: Express.Multer.File
+): Promise<{
   amount: number;
   date: Date;
   description: string;
@@ -15,8 +17,8 @@ export const scanReceipt = async (file: File): Promise<{
       model: "gemini-1.5-flash",
     });
 
-    const arrayBuffer = await file.arrayBuffer();
-    const base64String = Buffer.from(arrayBuffer).toString("base64");
+    const arrayBuffer = file.buffer
+    const base64String = arrayBuffer.toString("base64");
 
     const prompt = `
 You are an intelligent receipt scanner. Analyze the uploaded receipt image and extract the following details in JSON format:
@@ -44,7 +46,7 @@ If the image is NOT a receipt or data extraction fails, respond with:
       {
         inlineData: {
           data: base64String,
-          mimeType: file.type,
+          mimeType: file.mimetype,
         },
       },
       prompt,
@@ -53,7 +55,10 @@ If the image is NOT a receipt or data extraction fails, respond with:
     const resp = await result.response;
     const rawText = resp.text();
 
-    const cleanedText = rawText.replace(/```(?:json)?\n?/gi, "").replace(/```/g, "").trim();
+    const cleanedText = rawText
+      .replace(/```(?:json)?\n?/gi, "")
+      .replace(/```/g, "")
+      .trim();
 
     try {
       const data = JSON.parse(cleanedText);
@@ -74,7 +79,6 @@ If the image is NOT a receipt or data extraction fails, respond with:
       console.error("Failed to parse JSON from Gemini AI response:", error);
       return null;
     }
-
   } catch (error) {
     console.error("Failed to scan receipt:", error);
     return null;
