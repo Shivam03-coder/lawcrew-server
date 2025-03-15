@@ -402,7 +402,7 @@ export class FinanceController {
       if (!file) throw new ApiError(400, "No file uploaded.");
       const recieptData = await scanReceipt(file);
       if (!recieptData) throw new ApiError(400, "Failed to scan receipt.");
-      console.log(recieptData);
+      res.json(new ApiResponse(200, "Reciept scanned successfully", recieptData));
     }
   );
 }
