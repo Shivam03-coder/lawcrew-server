@@ -9,6 +9,8 @@ import { clerkMiddleware } from "@clerk/express";
 import { appEnvConfigs } from "./configs";
 import { ApiError } from "./helpers/server-functions";
 import routes from "./routes/index.routes";
+import { serve } from "inngest/express";
+import { inngest, functions } from "./libs/inngest";
 
 interface AppOptions {
   port?: number;
@@ -54,8 +56,12 @@ class App {
 
     this.app.options("*", cors());
   }
-
   private initializeRoutes(): void {
+    // Register Inngest handler first (or wherever appropriate)
+    this.app.use("/api/inngest", serve({ client: inngest, functions }));
+    console.log(`✅ Inngest route registered: /api/inngest`);
+
+    // Then register the rest of your routes
     routes.forEach((route) => {
       const fullPath = `/api/v1/${route.path}`;
       this.app.use(fullPath, route.router);

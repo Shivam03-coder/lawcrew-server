@@ -39,14 +39,12 @@ financeRouter
   .delete(requireAuth(), FinanceController.DeleteAccountTransactions);
 
 // Create a transaction (linked to any account)
-financeRouter
-  .route("/accounts/transactions")
-  .post(
-    requireAuth(),
-    // Security,
-    decryptPayload,
-    FinanceController.CreateTransaction
-  );
+financeRouter.route("/accounts/transactions").post(
+  requireAuth(),
+  // Security,
+  decryptPayload,
+  FinanceController.CreateTransaction
+);
 
 // ScanReciept
 financeRouter.post(
