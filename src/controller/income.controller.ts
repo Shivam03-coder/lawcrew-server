@@ -1,6 +1,6 @@
 import { getAuth } from "@clerk/express";
 import { db } from "@src/db";
-import { monthNames } from "@src/helpers/const";
+import { calculateNextRecurringDate, monthNames } from "@src/helpers/const";
 import {
   ApiError,
   ApiResponse,
@@ -326,6 +326,101 @@ export class FinanceController {
         },
       });
       res.json(new ApiResponse(200, "Budget updated successfully"));
+    }
+  );
+
+  public static CreateTransaction = AsyncHandler(
+    async (req: DecryptedRequest, res: Response): Promise<void> => {
+      const user = await FinanceController.CheckUserId(req);
+
+      // ARC JET FOR RATE LIMITTING
+      const {
+        type,
+        amount,
+        description,
+        date,
+        accountId,
+        category,
+        isRecurring,
+        recurringInterval,
+      } = FinanceController.getDecryptedData(req.decryptedData);
+
+      if (
+        !accountId ||
+        !type ||
+        !amount ||
+        !description ||
+        !date ||
+        !category ||
+        !isRecurring ||
+        !recurringInterval
+      ) {
+        throw new ApiError(
+          400,
+          "Missing required fields in request body (accountId, type, amount, description, date)"
+        );
+      }
+
+      const account = await db.account.findUnique({
+        where: {
+          id: accountId,
+          userId: user.id,
+        },
+      });
+
+      if (!account) {
+        throw new ApiError(
+          404,
+          "Account not found or does not belong to the user"
+        );
+      }
+
+      const amountFloat = parseFloat(amount);
+      if (isNaN(amountFloat)) {
+        throw new ApiError(400, "Invalid amount provided in request body");
+      }
+
+      const balanceChange =
+        type === "EXPENSE" || type === "TRANSFER" ? -amount : amount;
+
+      const newBalance = account.balance.toNumber() + balanceChange;
+
+      const transaction = await db.$transaction(async (tx) => {
+        const newTransaction = await tx.transaction.create({
+          data: {
+            userId: user.id,
+            accountId,
+            type,
+            amount: amountFloat,
+            description,
+            date,
+            category,
+            isRecurring,
+            recurringInterval,
+            nextRecurringDate:
+              isRecurring && recurringInterval
+                ? calculateNextRecurringDate(date, recurringInterval)
+                : null,
+          },
+        });
+
+        await tx.account.update({
+          where: {
+            id: accountId,
+          },
+          data: {
+            balance: newBalance,
+          },
+        });
+        return newTransaction;
+      });
+
+      res.json(
+        new ApiResponse(
+          201,
+          `Transaction of ${transaction.amount} created successfully`
+        )
+      );
     }
   );
 }

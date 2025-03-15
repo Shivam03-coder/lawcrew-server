@@ -20,9 +20,13 @@ financeRouter
   .delete(requireAuth(), FinanceController.DeleteAccountTransactions);
 
 financeRouter
+  .route("/accounts/transactions")
+  .post(requireAuth(), decryptPayload, FinanceController.CreateTransaction);
+
+financeRouter
   .route("/accounts/budget")
   .get(requireAuth(), FinanceController.GetCurrentAccountBudget)
-  .post(requireAuth(),decryptPayload, FinanceController.UpdateAccountBudget);
+  .post(requireAuth(), decryptPayload, FinanceController.UpdateAccountBudget);
 
 // UpdateAccountBudget
 
