@@ -8,4 +8,5 @@ export const appEnvConfigs = {
   NEXT_APP_URI: process.env.NEXT_APP_URI,
   SIGNING_SECRET: process.env.SIGNING_SECRET,
   ENCRYPTION_kEY: process.env.ENCRYPTION_kEY,
+  ARC_JET_PUBLISHABLE_KEY: process.env.ARC_JET_PUBLISHABLE_KEY,
 };
