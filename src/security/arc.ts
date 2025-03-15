@@ -3,7 +3,6 @@ import { appEnvConfigs } from "@src/configs";
 
 const Aj = arcjet({
   key: appEnvConfigs.ARC_JET_PUBLISHABLE_KEY!,
-
   characteristics: ["userId"],
   rules: [
     tokenBucket({

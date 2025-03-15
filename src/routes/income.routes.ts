@@ -43,7 +43,7 @@ financeRouter
   .route("/accounts/transactions")
   .post(
     requireAuth(),
-    Security,
+    // Security,
     decryptPayload,
     FinanceController.CreateTransaction
   );
@@ -52,7 +52,7 @@ financeRouter
 financeRouter.post(
   "/accounts/transactions/scan-reciept",
   requireAuth(),
-  Security,
+  // Security,
   upload.single("receipt"),
   FinanceController.ScanReciept
 );
